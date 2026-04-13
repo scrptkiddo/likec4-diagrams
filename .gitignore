@@ -1,3 +1,14 @@
-node_modules
-dist
-.likec4
+# 1. Игнорировать глобально ВСЕ файлы
+*
+!*/
+!.gitignore
+!.github/
+!.github/**/*
+!*.likec4
+!package.json
+!package-lock.json
+node_modules/
+dist/
+dist-latest/
+local-iframe.html/
+.likec4/
