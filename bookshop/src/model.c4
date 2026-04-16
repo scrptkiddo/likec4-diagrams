@@ -200,15 +200,9 @@ views {
       emailProvider,
       bookshop
       
-    // autoLayout TopBottom
-    // rank source {
-    //   buyer
-    // }
-    // rank sink {
-    //   bank,
-    //   deliveryService,
-    //   emailProvider
-    // }
+    autoLayout TopBottom
+    exclude emailProvider -> buyer
+    
     style buyer {
       color gray
     }
