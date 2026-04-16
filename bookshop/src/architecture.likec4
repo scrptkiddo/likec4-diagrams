@@ -279,12 +279,12 @@ views {
     frontend -> apiGateway 'GET /checkout/context [HTTPS/REST]'
     parallel {
       apiGateway -> cartService 'GetCart [gRPC]'
-      cartService -> apiGateway 'CartSnapshot'
+      cartService -> apiGateway 'Содержимое корзины (CartSnapshot)'
 
       apiGateway -> userProfileService 'GetUserDefaults [REST]'
-      userProfileService -> apiGateway 'Address + savedPaymentMethods'
+      userProfileService -> apiGateway 'Адрес + Способы оплаты'
     }
-    apiGateway -> frontend 'CheckoutContext'
+    apiGateway -> frontend 'Данные для страницы (CheckoutContext)'
     frontend -> buyer 'Отображение заполненного checkout'
 
     buyer -> frontend 'Подтверждает заказ'
@@ -292,13 +292,13 @@ views {
     apiGateway -> orderService 'CreateOrder [REST]'
     parallel {
       orderService -> inventoryService 'ReserveItems [gRPC]'
-      inventoryService -> orderService 'ReservationID + TTL'
+      inventoryService -> orderService 'ID резервации + TTL'
       
       orderService -> cartService 'GetCart [gRPC]'
-      cartService -> orderService 'CartSnapshot'
+      cartService -> orderService 'Содержимое корзины (CartSnapshot)'
     }
-    orderService -> eventBus 'order.created'
-    orderService -> apiGateway 'Order(status=PENDING_PAYMENT)' {
+    orderService -> eventBus 'Событие: order.created'
+    orderService -> apiGateway 'Данные заказа (status=PENDING_PAYMENT)' {
       notes 'Если покупатель не завершает оплату до истечения TTL, отрабатывает Cron (внутри OrderService): заказ отменяется и снимается резерв.'
     }
     apiGateway -> frontend 'Заказ создан'
@@ -313,8 +313,8 @@ views {
         delayed status и необходимость дополнительного подтверждения.
       '''
     }
-    paymentGateway -> paymentService 'payment_intent_id + status'
-    paymentService -> apiGateway 'Payment(status=PROCESSING | REQUIRES_ACTION)'
+    paymentGateway -> paymentService 'ID платежа + статус (payment_intent_id)'
+    paymentService -> apiGateway 'Данные платежа (status=PROCESSING | REQUIRES_ACTION)'
     apiGateway -> frontend 'Ответ по оплате / nextAction'
     paymentGateway -> bank 'Authorize / 3DS [API]'
     bank -> paymentGateway 'Результат авторизации'
@@ -326,24 +326,24 @@ views {
       notes 'Опционально: используется для уточнения delayed status у внешнего платёжного шлюза.'
     }
     paymentGateway -> paymentService 'Текущий / финальный статус оплаты'
-    paymentService -> apiGateway 'Payment(status=PROCESSING | SUCCEEDED | FAILED)'
+    paymentService -> apiGateway 'Данные платежа (status=PROCESSING | SUCCEEDED | FAILED)'
     apiGateway -> frontend 'Обновленный статус оплаты'
     paymentGateway -> paymentService 'Результат Webhook [HTTPS]' {
       notes 'Если статус уже был уточнён через polling, callback обрабатывается идемпотентно.'
     }
-    paymentService -> eventBus 'payment.succeeded'
-    eventBus -> orderService 'payment.succeeded'
-    orderService -> eventBus 'order.paid'
+    paymentService -> eventBus 'Событие: payment.succeeded'
+    eventBus -> orderService 'Событие: payment.succeeded'
+    orderService -> eventBus 'Событие: order.paid'
     parallel {
-      eventBus -> notificationService 'order.paid'
-      eventBus -> deliveryService 'order.paid'
+      eventBus -> notificationService 'Событие: order.paid'
+      eventBus -> deliveryService 'Событие: order.paid'
     }
-    notificationService -> emailProvider 'SendEmail [SMTP/API]'
+    notificationService -> emailProvider 'Отправка Email [SMTP/API]'
     emailProvider -> buyer 'Email с подтверждением заказа'
 
     frontend -> apiGateway 'GET /orders/{orderId} [HTTPS/REST]'
     apiGateway -> orderService 'GetOrder [REST]'
-    orderService -> apiGateway 'Order(status=PAID)'
+    orderService -> apiGateway 'Данные заказа (status=PAID)'
     apiGateway -> frontend 'Сводка по заказу (Order summary)'
     frontend -> buyer 'Экран подтверждения'
   }
