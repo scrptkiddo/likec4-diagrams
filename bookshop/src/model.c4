@@ -119,7 +119,6 @@ model {
   }
 
   paymentGateway = external 'Payment Gateway' {
-    icon tech:stripe
     technology 'Stripe / Adyen'
     description 'Обработка карточных транзакций'
   }
@@ -201,15 +200,15 @@ views {
       emailProvider,
       bookshop
       
-    autoLayout TopBottom
-    rank source {
-      buyer
-    }
-    rank sink {
-      bank,
-      deliveryService,
-      emailProvider
-    }
+    // autoLayout TopBottom
+    // rank source {
+    //   buyer
+    // }
+    // rank sink {
+    //   bank,
+    //   deliveryService,
+    //   emailProvider
+    // }
     style buyer {
       color gray
     }
@@ -238,17 +237,17 @@ views {
       deliveryService,
       emailProvider
 
-    autoLayout TopBottom
+    // autoLayout TopBottom
 
-    rank source {
-      buyer,
-      frontend
-    }
+    // rank source {
+    //   buyer,
+    //   frontend
+    // }
 
-    rank sink {
-      emailProvider,
-      deliveryService
-    }
+    // rank sink {
+    //   emailProvider,
+    //   deliveryService
+    // }
   }
 
   dynamic view checkout_process {
