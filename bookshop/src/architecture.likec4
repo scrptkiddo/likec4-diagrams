@@ -129,12 +129,12 @@ model {
     description 'Авторизация транзакции, 3DS, списание средств'
   }
 
-  deliveryService = external 'Delivery Service' {
+  deliveryService = external 'Служба доставки (Delivery Service)' {
     technology 'External API'
     description 'Получает подтверждённый заказ для дальнейшей доставки'
   }
 
-  emailProvider = external 'Email Provider' {
+  emailProvider = external 'Email-провайдер (Email Provider)' {
     technology 'SMTP / SendGrid'
     description 'Рассылка транзакционных писем'
   }
@@ -155,38 +155,38 @@ model {
 
   orderService -> inventoryService 'ReserveItems  [gRPC]'
   // orderService -> orderService 'Cron: cancel expired orders'
-  orderService -> orderDb         'persist'
-  orderService -> eventBus        'publishes order.created / order.paid / order.cancelled'
+  orderService -> orderDb         'сохраняет в БД'
+  orderService -> eventBus        'публикует order.created / order.paid / order.cancelled'
 
   paymentService -> paymentGateway 'POST /payment-intents · GET /payment-intents/{gatewayReference}  [HTTPS]' {
     navigateTo checkout_process
   }
-  paymentService -> paymentDb      'persist'
-  paymentService -> eventBus       'publishes payment.succeeded / payment.failed'
+  paymentService -> paymentDb      'сохраняет в БД'
+  paymentService -> eventBus       'публикует payment.succeeded / payment.failed'
 
   paymentGateway -> bank           'Authorize / 3DS  [API]'
   paymentGateway -> paymentService 'Webhook: POST /integrations/payments/webhooks  [HTTPS]'
 
-  frontend -> bank 'Redirect for 3DS confirmation'
+  frontend -> bank 'Редирект для подтверждения 3DS'
 
-  eventBus -> orderService          'payment.succeeded / payment.failed -> update order status' {
+  eventBus -> orderService          'payment.succeeded / payment.failed -> обновление статуса заказа' {
     style { line dashed }
   }
-  eventBus -> cartService           'order.paid -> clear cart' {
+  eventBus -> cartService           'order.paid -> очистка корзины' {
     style { line dashed }
   }
-  eventBus -> notificationService   'order.paid -> send email' {
+  eventBus -> notificationService   'order.paid -> отправка email' {
     style { line dashed }
   }
-  eventBus -> inventoryService      'order.cancelled -> release reserve' {
+  eventBus -> inventoryService      'order.cancelled -> снятие резерва' {
     style { line dashed }
   }
-  eventBus -> deliveryService       'order.paid -> start delivery' {
+  eventBus -> deliveryService       'order.paid -> запуск доставки' {
     style { line dashed }
   }
 
   notificationService -> emailProvider 'SendEmail  [SMTP/API]'
-  emailProvider -> buyer 'Order confirmation email'
+  emailProvider -> buyer 'Email с подтверждением заказа'
 }
 
 views {
@@ -285,7 +285,7 @@ views {
       userProfileService -> apiGateway 'Address + savedPaymentMethods'
     }
     apiGateway -> frontend 'CheckoutContext'
-    frontend -> buyer 'Показать prefilled checkout'
+    frontend -> buyer 'Отображение заполненного checkout'
 
     buyer -> frontend 'Подтверждает заказ'
     frontend -> apiGateway 'POST /orders [HTTPS/REST]'
@@ -301,7 +301,7 @@ views {
     orderService -> apiGateway 'Order(status=PENDING_PAYMENT)' {
       notes 'Если покупатель не завершает оплату до истечения TTL, отрабатывает Cron (внутри OrderService): заказ отменяется и снимается резерв.'
     }
-    apiGateway -> frontend 'Order created'
+    apiGateway -> frontend 'Заказ создан'
 
     buyer -> frontend 'Запускает оплату'
     frontend -> apiGateway 'POST /orders/{orderId}/payments [HTTPS/REST]'
@@ -315,9 +315,9 @@ views {
     }
     paymentGateway -> paymentService 'payment_intent_id + status'
     paymentService -> apiGateway 'Payment(status=PROCESSING | REQUIRES_ACTION)'
-    apiGateway -> frontend 'Payment response / nextAction'
+    apiGateway -> frontend 'Ответ по оплате / nextAction'
     paymentGateway -> bank 'Authorize / 3DS [API]'
-    bank -> paymentGateway 'Authorization result'
+    bank -> paymentGateway 'Результат авторизации'
     frontend -> apiGateway 'GET /payments/{paymentId} [HTTPS/REST]' {
       notes 'Опционально: используется, если frontend ещё не получил финальный статус оплаты.'
     }
@@ -325,10 +325,10 @@ views {
     paymentService -> paymentGateway 'GET /payment-intents/{gatewayReference} [HTTPS]' {
       notes 'Опционально: используется для уточнения delayed status у внешнего платёжного шлюза.'
     }
-    paymentGateway -> paymentService 'Current / final payment status'
+    paymentGateway -> paymentService 'Текущий / финальный статус оплаты'
     paymentService -> apiGateway 'Payment(status=PROCESSING | SUCCEEDED | FAILED)'
-    apiGateway -> frontend 'Refreshed payment status'
-    paymentGateway -> paymentService 'Webhook result [HTTPS]' {
+    apiGateway -> frontend 'Обновленный статус оплаты'
+    paymentGateway -> paymentService 'Результат Webhook [HTTPS]' {
       notes 'Если статус уже был уточнён через polling, callback обрабатывается идемпотентно.'
     }
     paymentService -> eventBus 'payment.succeeded'
@@ -339,12 +339,12 @@ views {
       eventBus -> deliveryService 'order.paid'
     }
     notificationService -> emailProvider 'SendEmail [SMTP/API]'
-    emailProvider -> buyer 'Order confirmation email'
+    emailProvider -> buyer 'Email с подтверждением заказа'
 
     frontend -> apiGateway 'GET /orders/{orderId} [HTTPS/REST]'
     apiGateway -> orderService 'GetOrder [REST]'
     orderService -> apiGateway 'Order(status=PAID)'
-    apiGateway -> frontend 'Order summary'
+    apiGateway -> frontend 'Сводка по заказу (Order summary)'
     frontend -> buyer 'Экран подтверждения'
   }
 
